@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FinTrack — Business Financial Dashboard</title>
+<meta name="description" content="Comprehensive financial monitoring dashboard for businesses."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ===== DESIGN TOKENS ===== */
+:root{
+  --bg-base:#f4f1ee;--bg-surface:#faf8f5;--bg-card:#ffffff;
+  --sidebar-bg:#1a1a2e;--sidebar-text:#a8a8c0;
+  --pastel-blue:#c8dff0;--pastel-pink:#f4c5ce;--pastel-green:#b8e4ca;
+  --pastel-yellow:#f7e8b0;--pastel-purple:#d4c5f0;--pastel-peach:#f8d9c8;
+  --accent-blue:#6baed6;--accent-pink:#e88fa0;--accent-green:#5ec48a;
+  --accent-yellow:#d4b44a;--accent-purple:#9b7dd4;
+  --text-primary:#1c1c2e;--text-secondary:#6b6b8a;--text-muted:#9b9bb8;
+  --border:rgba(0,0,0,0.07);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.05),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.07),0 2px 6px rgba(0,0,0,0.05);
+  --shadow-lg:0 10px 40px rgba(0,0,0,0.10);
+  --radius-sm:8px;--radius-md:14px;--radius-lg:20px;
+  --sidebar-width:220px;--topbar-height:68px;
+  --font:'Inter',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{font-family:var(--font);background:var(--bg-base);color:var(--text-primary);min-height:100vh;display:flex;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-width);background:var(--sidebar-bg);height:100vh;display:flex;flex-direction:column;flex-shrink:0;padding:24px 0 20px;position:sticky;top:0;overflow-y:auto;scrollbar-width:none;}
+.sidebar::-webkit-scrollbar{display:none;}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 20px 28px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.logo-mark{width:34px;height:34px;background:linear-gradient(135deg,var(--pastel-blue),var(--pastel-purple));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px;}
+.logo-text{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.3px;}
+.sidebar-nav{flex:1;padding:20px 10px 0;}
+.nav-section-label{font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,0.3);padding:0 10px;margin-bottom:6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-sm);color:var(--sidebar-text);text-decoration:none;font-size:13.5px;font-weight:500;transition:background .15s,color .15s;margin-bottom:2px;cursor:pointer;}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.75);}
+.nav-item.active{background:rgba(255,255,255,0.08);color:#fff;}
+.nav-item svg{flex-shrink:0;opacity:.75;}
+.nav-item.active svg{opacity:1;}
+.sidebar-footer{display:flex;align-items:center;gap:10px;padding:16px 20px 0;border-top:1px solid rgba(255,255,255,0.06);margin-top:16px;}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--pastel-pink),var(--pastel-purple));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-primary);}
+.user-info{display:flex;flex-direction:column;}
+.user-name{font-size:13px;font-weight:600;color:#fff;}
+.user-role{font-size:11px;color:var(--sidebar-text);}
+
+/* MAIN */
+.main-content{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.topbar{height:var(--topbar-height);background:var(--bg-surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;flex-shrink:0;}
+.topbar-left{display:flex;flex-direction:column;gap:2px;}
+.page-title{font-size:20px;font-weight:700;color:var(--text-primary);letter-spacing:-.4px;}
+.page-subtitle{font-size:12px;color:var(--text-muted);font-weight:400;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;min-width:220px;}
+.search-box svg{color:var(--text-muted);flex-shrink:0;}
+.search-box input{border:none;background:transparent;outline:none;font-size:13px;color:var(--text-primary);width:100%;font-family:var(--font);}
+.period-selector select{border:1px solid var(--border);background:var(--bg-card);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;font-family:var(--font);color:var(--text-primary);cursor:pointer;outline:none;}
+.btn-primary{background:var(--sidebar-bg);color:#fff;border:none;border-radius:var(--radius-sm);padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:opacity .15s,transform .1s;}
+.btn-primary:hover{opacity:.85;transform:translateY(-1px);}
+.alert-bell{position:relative;width:38px;height:38px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);}
+.alert-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:var(--accent-pink);border-radius:50%;font-size:9px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;}
+
+/* PAGES */
+.pages-wrapper{flex:1;overflow-y:auto;padding:24px 28px 32px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* CARDS */
+.chart-card{background:var(--bg-card);border-radius:var(--radius-md);border:1px solid var(--border);padding:20px;box-shadow:var(--shadow-sm);}
+.card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:10px;}
+.card-title{font-size:14px;font-weight:600;color:var(--text-primary);}
+.card-subtitle{font-size:12px;color:var(--text-muted);margin-top:2px;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kpi-card{border-radius:var(--radius-md);padding:20px;border:1px solid var(--border);position:relative;overflow:hidden;}
+.kpi-revenue{background:linear-gradient(135deg,#ddeeff 0%,#c8dff0 100%);}
+.kpi-expenses{background:linear-gradient(135deg,#fce8ea 0%,#f4c5ce 100%);}
+.kpi-profit{background:linear-gradient(135deg,#d6f5e3 0%,#b8e4ca 100%);}
+.kpi-margin{background:linear-gradient(135deg,#f8edd0 0%,#f7e8b0 100%);}
+.kpi-label{font-size:11.5px;font-weight:600;color:var(--text-secondary);letter-spacing:.3px;margin-bottom:6px;}
+.kpi-value{font-size:26px;font-weight:700;color:var(--text-primary);letter-spacing:-1px;line-height:1;}
+.kpi-change{font-size:11.5px;font-weight:500;margin-top:6px;}
+.kpi-change.positive{color:#2e9e5a;}
+.kpi-change.negative{color:#c0444b;}
+.kpi-sparkline{margin-top:10px;}
+
+/* LAYOUTS */
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px;}
+.bottom-row{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px;margin-bottom:20px;}
+.full-width{margin-bottom:20px;}
+.chart-legend{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-secondary);flex-wrap:wrap;}
+.legend-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;}
+
+/* DONUT LEGEND */
+.donut-legend{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+.donut-legend-item{display:flex;align-items:center;justify-content:space-between;font-size:12px;}
+.donut-legend-left{display:flex;align-items:center;gap:8px;}
+.donut-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+/* TRANSACTION LIST */
+.transaction-list{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;scrollbar-width:thin;}
+.tx-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-base);border-radius:var(--radius-sm);font-size:13px;}
+.tx-info{display:flex;flex-direction:column;gap:2px;}
+.tx-name{font-weight:500;color:var(--text-primary);}
+.tx-category{font-size:11px;color:var(--text-muted);}
+.tx-amount{font-weight:700;}
+.tx-amount.in{color:#2e9e5a;}
+.tx-amount.out{color:#c0444b;}
+.tx-date{font-size:11px;color:var(--text-muted);text-align:right;}
+
+/* RISK GAUGE */
+.risk-gauge-container{position:relative;display:flex;justify-content:center;align-items:center;}
+.risk-label-center{position:absolute;font-size:28px;font-weight:700;color:var(--text-primary);pointer-events:none;margin-top:20px;}
+.risk-breakdown{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+.risk-row{display:flex;align-items:center;gap:8px;font-size:12px;}
+.risk-bar-bg{flex:1;height:5px;background:var(--bg-base);border-radius:10px;overflow:hidden;}
+.risk-bar-fill{height:100%;border-radius:10px;}
+
+/* P&L TABLE */
+.pnl-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;}
+.pnl-side{display:flex;flex-direction:column;gap:14px;}
+.pnl-table-container{overflow-x:auto;margin-top:0;}
+.pnl-table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;}
+.pnl-table th{background:var(--bg-base);padding:8px 10px;text-align:right;color:var(--text-secondary);font-weight:600;border-bottom:1px solid var(--border);}
+.pnl-table th:first-child{text-align:left;}
+.pnl-table td{padding:7px 10px;text-align:right;border-bottom:1px solid rgba(0,0,0,0.04);}
+.pnl-table td:first-child{text-align:left;font-weight:500;}
+.pnl-table tr.section-header td{background:var(--bg-base);font-weight:700;color:var(--text-secondary);font-size:10px;letter-spacing:.8px;text-transform:uppercase;}
+.pnl-table tr.total-row td{font-weight:700;color:var(--text-primary);border-top:1px solid var(--border);}
+.pnl-table td.positive{color:#2e9e5a;}
+.pnl-table td.negative{color:#c0444b;}
+
+/* DATA TABLES */
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{text-align:left;padding:10px 14px;color:var(--text-secondary);font-weight:600;font-size:11.5px;border-bottom:1px solid var(--border);letter-spacing:.3px;}
+.data-table td{padding:11px 14px;border-bottom:1px solid rgba(0,0,0,0.04);vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:var(--bg-base);}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:50px;font-size:11px;font-weight:600;}
+.badge-success{background:var(--pastel-green);color:#1a6e3a;}
+.badge-warning{background:var(--pastel-yellow);color:#7a5c10;}
+.badge-danger{background:var(--pastel-pink);color:#8c2d35;}
+.badge-info{background:var(--pastel-blue);color:#235580;}
+.badge-muted{background:var(--bg-base);color:var(--text-secondary);}
+
+/* FILTER TABS */
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+.filter-tab{border:1px solid var(--border);background:var(--bg-base);border-radius:50px;padding:5px 14px;font-size:12px;font-weight:500;color:var(--text-secondary);cursor:pointer;font-family:var(--font);transition:background .15s,color .15s,border .15s;}
+.filter-tab.active,.filter-tab:hover{background:var(--sidebar-bg);color:#fff;border-color:var(--sidebar-bg);}
+
+/* CURRENCY */
+.currency-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;}
+.converter-form{display:flex;flex-direction:column;gap:12px;margin-top:16px;}
+.converter-row{display:flex;gap:8px;}
+.conv-input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:15px;font-weight:600;font-family:var(--font);background:var(--bg-base);color:var(--text-primary);outline:none;}
+.result-input{background:var(--pastel-green);}
+.conv-select{padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);background:var(--bg-card);color:var(--text-primary);cursor:pointer;outline:none;}
+.swap-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--pastel-blue);cursor:pointer;color:var(--accent-blue);align-self:center;transition:transform .2s;flex-shrink:0;}
+.swap-btn:hover{transform:rotate(180deg);}
+.full-btn{width:100%;}
+.rate-info{font-size:12px;color:var(--text-muted);text-align:center;}
+.fx-rates-grid{display:flex;flex-direction:column;gap:8px;margin-top:14px;max-height:280px;overflow-y:auto;}
+.fx-rate-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-base);border-radius:var(--radius-sm);font-size:13px;}
+.fx-currency{font-weight:600;color:var(--text-primary);}
+.fx-rate{color:var(--text-secondary);}
+.fx-change{font-size:11px;font-weight:600;}
+.fx-change.up{color:#2e9e5a;}
+.fx-change.down{color:#c0444b;}
+
+/* FRAUD */
+.fraud-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.fraud-kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;}
+.fraud-kpi-label{font-size:11.5px;font-weight:600;color:var(--text-muted);margin-bottom:6px;}
+.fraud-kpi-value{font-size:24px;font-weight:700;color:var(--text-primary);letter-spacing:-.5px;}
+.fraud-kpi-sub{font-size:11px;color:var(--text-muted);margin-top:4px;}
+.risk-btn{border:none;border-radius:50px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:opacity .15s;}
+.risk-btn-approve{background:var(--pastel-green);color:#1a6e3a;}
+.risk-btn-review{background:var(--pastel-yellow);color:#7a5c10;}
+.risk-btn-block{background:var(--pastel-pink);color:#8c2d35;}
+
+/* AI INSIGHTS */
+.ai-header-card{margin-bottom:20px;}
+.ai-header-inner{display:flex;align-items:center;gap:16px;}
+.ai-icon{width:48px;height:48px;background:var(--pastel-purple);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--accent-purple);flex-shrink:0;}
+.ai-insights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;}
+.insight-card{border-radius:var(--radius-md);padding:18px;border:1px solid var(--border);}
+.insight-icon{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.insight-title{font-size:13.5px;font-weight:600;color:var(--text-primary);margin-bottom:6px;}
+.insight-desc{font-size:12.5px;color:var(--text-secondary);line-height:1.6;}
+.insight-score{margin-top:12px;}
+.score-bar-bg{height:6px;background:rgba(0,0,0,0.08);border-radius:10px;overflow:hidden;margin-top:6px;}
+.score-bar-fill{height:100%;border-radius:10px;}
+.score-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-secondary);}
+.health-scores{display:flex;flex-direction:column;gap:14px;padding:4px 0;}
+.health-label{display:flex;justify-content:space-between;font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:6px;}
+.health-bar-bg{height:8px;background:var(--bg-base);border-radius:10px;overflow:hidden;}
+.health-bar-fill{height:100%;border-radius:10px;}
+.remedies-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:4px;}
+.remedy-card{border-radius:var(--radius-md);padding:18px;border:1px solid var(--border);background:var(--bg-base);}
+.remedy-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.remedy-severity{font-size:10px;font-weight:700;padding:3px 8px;border-radius:50px;letter-spacing:.5px;}
+.remedy-title{font-size:13.5px;font-weight:600;color:var(--text-primary);}
+.remedy-desc{font-size:12.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:10px;}
+.remedy-action{font-size:12px;color:var(--text-secondary);padding-left:14px;position:relative;line-height:1.5;margin-bottom:4px;}
+.remedy-action::before{content:'•';position:absolute;left:0;color:var(--text-muted);}
+.remedy-prediction{margin-top:12px;padding:8px 12px;background:var(--bg-card);border-radius:var(--radius-sm);font-size:12px;color:var(--text-secondary);border-left:3px solid;}
+
+/* TABLE SEARCH */
+.table-search input{border:1px solid var(--border);background:var(--bg-base);border-radius:var(--radius-sm);padding:7px 12px;font-size:13px;outline:none;font-family:var(--font);color:var(--text-primary);}
+
+/* REPORTS */
+.reports-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+.report-list{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+.report-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg-base);border-radius:var(--radius-sm);}
+.report-info{display:flex;align-items:center;gap:12px;}
+.report-icon{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;}
+.report-name{font-size:13.5px;font-weight:600;color:var(--text-primary);}
+.report-meta{font-size:11.5px;color:var(--text-muted);margin-top:2px;}
+.report-actions{display:flex;gap:8px;}
+.btn-outline{border:1px solid var(--border);background:var(--bg-card);border-radius:var(--radius-sm);padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--text-secondary);transition:background .15s;}
+.btn-outline:hover{background:var(--bg-base);}
+
+/* SETTINGS */
+.settings-layout{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.settings-form{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.settings-form label{font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:-4px;}
+.settings-input{border:1px solid var(--border);background:var(--bg-base);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;outline:none;font-family:var(--font);color:var(--text-primary);width:100%;}
+.range-input{width:100%;accent-color:var(--sidebar-bg);cursor:pointer;}
+.range-value{font-size:13px;font-weight:600;color:var(--text-primary);align-self:flex-end;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;}
+.toggle-row span{font-size:13px;color:var(--text-primary);}
+.toggle{position:relative;display:inline-block;width:42px;height:24px;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:24px;transition:background .2s;}
+.toggle-slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:transform .2s;}
+.toggle input:checked+.toggle-slider{background:var(--sidebar-bg);}
+.toggle input:checked+.toggle-slider::before{transform:translateX(18px);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.3);display:none;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg-card);border-radius:var(--radius-lg);width:480px;max-width:95vw;box-shadow:var(--shadow-lg);animation:slide-up .2s ease;}
+@keyframes slide-up{from{transform:translateY(16px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);}
+.modal-header h2{font-size:16px;font-weight:700;}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);line-height:1;}
+.modal-body{padding:20px 24px 24px;display:flex;flex-direction:column;gap:14px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group label{font-size:12px;font-weight:600;color:var(--text-secondary);}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">FT</div>
+    <span class="logo-text">FinTrack</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">General</div>
+    <a class="nav-item active" data-page="dashboard">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a class="nav-item" data-page="pnl">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      P&amp;L Report
+    </a>
+    <a class="nav-item" data-page="expenses">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Expenses
+    </a>
+    <a class="nav-item" data-page="currency">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      Currency
+    </a>
+    <div class="nav-section-label" style="margin-top:16px">Risk &amp; Intelligence</div>
+    <a class="nav-item" data-page="fraud">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Fraud Monitor
+    </a>
+    <a class="nav-item" data-page="ai">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      AI Insights
+    </a>
+    <a class="nav-item" data-page="reports">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Reports
+    </a>
+    <div class="nav-section-label" style="margin-top:16px">Tools</div>
+    <a class="nav-item" data-page="settings">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-avatar">AB</div>
+    <div class="user-info">
+      <span class="user-name">Acme Corp</span>
+      <span class="user-role">Admin</span>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main-content">
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1 class="page-title" id="page-title">Dashboard</h1>
+      <span class="page-subtitle" id="page-subtitle">Overview — November 2026</span>
+    </div>
+    <div class="topbar-right">
+      <div class="search-box">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Search transactions, reports..."/>
+      </div>
+      <div class="period-selector">
+        <select id="period-select">
+          <option>Last 7 days</option>
+          <option selected>Last 30 days</option>
+          <option>Last 90 days</option>
+          <option>Last 12 months</option>
+        </select>
+      </div>
+      <button class="btn-primary" id="add-transaction-btn">+ Add Transaction</button>
+      <div class="alert-bell">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="alert-badge">3</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="pages-wrapper">
+
+    <!-- DASHBOARD -->
+    <section class="page active" id="page-dashboard">
+      <div class="data-notice"><div class="data-notice-dot"></div><span><strong>Demo Mode:</strong> All metrics use simulated data — 11-month revenue/expense arrays, hardcoded FX rates, and pre-written AI insights. Connect your accounting API to use real figures.</span></div>
+      <div class="kpi-row">
+        <div class="kpi-card kpi-revenue"><div class="kpi-label">Total Revenue</div><div class="kpi-value">$842,500</div><div class="kpi-change positive">+12.4% vs last period</div><div class="kpi-sparkline"><canvas id="spark-revenue" height="32"></canvas></div></div>
+        <div class="kpi-card kpi-expenses"><div class="kpi-label">Total Expenses</div><div class="kpi-value">$391,200</div><div class="kpi-change negative">+8.1% vs last period</div><div class="kpi-sparkline"><canvas id="spark-expenses" height="32"></canvas></div></div>
+        <div class="kpi-card kpi-profit"><div class="kpi-label">Net Profit</div><div class="kpi-value">$451,300</div><div class="kpi-change positive">+16.8% vs last period</div><div class="kpi-sparkline"><canvas id="spark-profit" height="32"></canvas></div></div>
+        <div class="kpi-card kpi-margin"><div class="kpi-label">Profit Margin</div><div class="kpi-value">53.6%</div><div class="kpi-change positive">+2.1pp vs last period</div><div class="kpi-sparkline"><canvas id="spark-margin" height="32"></canvas></div></div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="card-header">
+            <div><div class="card-title">Revenue vs Expenses</div><div class="card-subtitle">Monthly comparison</div></div>
+            <div class="chart-legend">
+              <span class="legend-dot" style="background:#a8c5da"></span>Revenue
+              <span class="legend-dot" style="background:#f4b8c1;margin-left:8px"></span>Expenses
+              <span class="legend-dot" style="background:#b5e4ca;margin-left:8px"></span>Profit
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:160px"><canvas id="chart-revexp"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-header"><div class="card-title">Expense Breakdown</div><div class="card-subtitle">By category</div></div>
+          <div class="chart-wrap" style="height:140px"><canvas id="chart-expense-donut"></canvas></div>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+      </div>
+      <div class="bottom-row">
+        <div class="chart-card">
+          <div class="card-header"><div class="card-title">Recent Transactions</div><div class="card-subtitle">Last 10 entries</div></div>
+          <div class="transaction-list" id="transaction-list"></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-header"><div class="card-title">Risk Score</div><div class="card-subtitle">Current monitoring</div></div>
+          <div class="risk-gauge-container"><canvas id="risk-gauge" height="130"></canvas><div class="risk-label-center" style="font-size:22px">72</div></div>
+          <div class="risk-breakdown" id="risk-breakdown"></div>
+        </div>
+        <div class="chart-card">
+          <div class="card-header"><div class="card-title">Cash Flow Forecast</div><div class="card-subtitle">30-day projection</div></div>
+          <div class="chart-wrap" style="height:140px"><canvas id="chart-cashflow"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- P&L -->
+    <section class="page" id="page-pnl">
+      <div class="pnl-layout">
+        <div class="chart-card" style="overflow:auto">
+          <div class="card-header"><div class="card-title">Profit &amp; Loss Statement</div><div class="card-subtitle">YTD 2026 — Simulated data</div></div>
+          <div class="pnl-table-container"><table class="pnl-table"><thead><tr><th>Category</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Total</th></tr></thead><tbody id="pnl-tbody"></tbody></table></div>
+        </div>
+        <div class="pnl-side">
+          <div class="chart-card"><div class="card-title" style="margin-bottom:12px">Waterfall — Net Profit Build</div><div class="chart-wrap" style="height:200px"><canvas id="chart-waterfall"></canvas></div></div>
+          <div class="chart-card"><div class="card-title" style="margin-bottom:12px">Gross Margin Trend</div><div class="chart-wrap" style="height:140px"><canvas id="chart-margin-trend"></canvas></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPENSES -->
+    <section class="page" id="page-expenses">
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="card-header">
+            <div class="card-title">Expense Tracking</div>
+            <div class="filter-tabs" id="expense-filter-tabs">
+              <button class="filter-tab active" data-filter="all">All</button>
+              <button class="filter-tab" data-filter="Payroll">Payroll</button>
+              <button class="filter-tab" data-filter="Operations">Operations</button>
+              <button class="filter-tab" data-filter="Marketing">Marketing</button>
+              <button class="filter-tab" data-filter="Technology">Technology</button>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:160px"><canvas id="chart-expense-bar"></canvas></div>
+        </div>
+        <div class="chart-card"><div class="card-title" style="margin-bottom:12px">Budget vs Actual</div><div class="chart-wrap" style="height:190px"><canvas id="chart-budget"></canvas></div></div>
+      </div>
+      <div class="chart-card full-width">
+        <div class="card-header">
+          <div class="card-title">Expense Log</div>
+          <div class="table-search"><input type="text" id="expense-search" placeholder="Filter expenses..."/></div>
+        </div>
+        <table class="data-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Status</th></tr></thead><tbody id="expense-tbody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- CURRENCY -->
+    <section class="page" id="page-currency">
+      <div class="currency-top">
+        <div class="chart-card">
+          <div class="card-title">Currency Converter</div>
+          <div class="converter-form">
+            <div class="converter-row"><input type="number" id="conv-amount" value="1000" class="conv-input"/><select id="conv-from" class="conv-select"></select></div>
+            <div class="swap-btn" id="swap-currencies"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
+            <div class="converter-row"><input type="number" id="conv-result" readonly class="conv-input result-input"/><select id="conv-to" class="conv-select"></select></div>
+            <button class="btn-primary full-btn" id="do-convert">Convert</button>
+            <div class="rate-info" id="rate-info"></div>
+          </div>
+        </div>
+        <div class="chart-card"><div class="card-title">Live FX Rates (vs USD)</div><div class="fx-rates-grid" id="fx-rates-grid"></div></div>
+        <div class="chart-card"><div class="card-title" style="margin-bottom:12px">Currency Exposure</div><div class="chart-wrap" style="height:170px"><canvas id="chart-fx-exposure"></canvas></div></div>
+      </div>
+      <div class="chart-card full-width"><div class="card-title" style="margin-bottom:12px">Exchange Rate History</div><div class="chart-wrap" style="height:150px"><canvas id="chart-fx-history"></canvas></div></div>
+    </section>
+
+    <!-- FRAUD -->
+    <section class="page" id="page-fraud">
+      <div class="fraud-kpi-row">
+        <div class="fraud-kpi-card"><div class="fraud-kpi-label">Flagged Transactions</div><div class="fraud-kpi-value">14</div><div class="fraud-kpi-sub">Last 30 days</div></div>
+        <div class="fraud-kpi-card"><div class="fraud-kpi-label">Anomaly Score</div><div class="fraud-kpi-value">6.4 / 10</div><div class="fraud-kpi-sub">Elevated</div></div>
+        <div class="fraud-kpi-card"><div class="fraud-kpi-label">Blocked Amount</div><div class="fraud-kpi-value">$28,440</div><div class="fraud-kpi-sub">Prevented losses</div></div>
+        <div class="fraud-kpi-card"><div class="fraud-kpi-label">False Positive Rate</div><div class="fraud-kpi-value">2.1%</div><div class="fraud-kpi-sub">Acceptable range</div></div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card"><div class="card-title" style="margin-bottom:12px">Fraud Detection Timeline</div><div class="chart-wrap" style="height:160px"><canvas id="chart-fraud-timeline"></canvas></div></div>
+        <div class="chart-card"><div class="card-title" style="margin-bottom:12px">Risk Categories</div><div class="chart-wrap" style="height:160px"><canvas id="chart-fraud-cat"></canvas></div></div>
+      </div>
+      <div class="chart-card full-width">
+        <div class="card-header"><div class="card-title">Flagged Transactions</div><span class="badge badge-warning">Review Required</span></div>
+        <table class="data-table"><thead><tr><th>Transaction ID</th><th>Date</th><th>Amount</th><th>Merchant</th><th>Risk Score</th><th>Status</th><th>Action</th></tr></thead><tbody id="fraud-tbody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- AI INSIGHTS -->
+    <section class="page" id="page-ai">
+      <div class="chart-card ai-header-card">
+        <div class="ai-header-inner">
+          <div class="ai-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div>
+          <div><div class="card-title">AI Financial Intelligence</div><div class="card-subtitle">Insights derived from: monthly revenue trend (11 months), expense category ratios, budget variance, fraud transaction scores, and payroll-to-revenue ratio</div></div>
+        </div>
+      </div>
+      <div class="ai-insights-grid" id="ai-insights-grid"></div>
+      <div class="charts-row">
+        <div class="chart-card"><div class="card-title" style="margin-bottom:12px">Revenue Forecast (90-day)</div><div class="chart-wrap" style="height:170px"><canvas id="chart-forecast"></canvas></div></div>
+        <div class="chart-card"><div class="card-title" style="margin-bottom:12px">Financial Health Scores</div><div class="health-scores" id="health-scores"></div></div>
+      </div>
+      <div class="chart-card full-width"><div class="card-title" style="margin-bottom:12px">Remedies &amp; Recommendations</div><div class="remedies-grid" id="remedies-grid"></div></div>
+    </section>
+
+    <!-- REPORTS -->
+    <section class="page" id="page-reports">
+      <div class="reports-grid">
+        <div class="chart-card"><div class="card-title" style="margin-bottom:12px">Year-over-Year Comparison</div><div class="chart-wrap" style="height:190px"><canvas id="chart-yoy"></canvas></div></div>
+        <div class="chart-card"><div class="card-title" style="margin-bottom:12px">Quarterly Breakdown</div><div class="chart-wrap" style="height:190px"><canvas id="chart-quarterly"></canvas></div></div>
+      </div>
+      <div class="chart-card full-width">
+        <div class="card-header"><div class="card-title">Downloadable Reports</div></div>
+        <div class="report-list" id="report-list"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="page" id="page-settings">
+      <div class="settings-layout">
+        <div class="chart-card">
+          <div class="card-title">Company Settings</div>
+          <div class="settings-form">
+            <label>Company Name</label><input type="text" value="Acme Corporation" class="settings-input"/>
+            <label>Base Currency</label><select class="settings-input"><option>USD — US Dollar</option><option>EUR — Euro</option><option>GBP — British Pound</option><option>INR — Indian Rupee</option></select>
+            <label>Fiscal Year Start</label><select class="settings-input"><option>January</option><option>April</option><option>July</option><option>October</option></select>
+            <label>Report Timezone</label><select class="settings-input"><option>UTC+5:30 — IST</option><option>UTC+0:00 — GMT</option><option>UTC-5:00 — EST</option></select>
+            <button class="btn-primary">Save Changes</button>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="card-title">Alert Thresholds</div>
+          <div class="settings-form">
+            <label>Fraud Risk Score Alert (&gt;)</label>
+            <input type="range" min="0" max="10" value="7" class="range-input" id="fraud-threshold"/>
+            <span class="range-value" id="fraud-threshold-val">7.0</span>
+            <label>Expense Over-budget Alert (%)</label>
+            <input type="range" min="0" max="50" value="15" class="range-input" id="budget-threshold"/>
+            <span class="range-value" id="budget-threshold-val">15%</span>
+            <label>Large Transaction Alert ($)</label><input type="number" value="50000" class="settings-input"/>
+            <label>Notifications</label>
+            <div class="toggle-row"><span>Email Alerts</span><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><span>Fraud Alerts</span><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-row"><span>Weekly Report</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+            <button class="btn-primary">Update Thresholds</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><h2>Add Transaction</h2><button class="modal-close" id="modal-close">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Type</label><select id="tx-type" class="settings-input"><option>Revenue</option><option>Expense</option></select></div>
+        <div class="form-group"><label>Category</label><select id="tx-category" class="settings-input"><option>Payroll</option><option>Operations</option><option>Marketing</option><option>Technology</option><option>Sales</option><option>Other</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Amount (USD)</label><input type="number" id="tx-amount" class="settings-input" placeholder="0.00"/></div>
+        <div class="form-group"><label>Date</label><input type="date" id="tx-date" class="settings-input"/></div>
+      </div>
+      <div class="form-group"><label>Description</label><input type="text" id="tx-desc" class="settings-input" placeholder="Transaction description..."/></div>
+      <button class="btn-primary full-btn" id="save-transaction">Save Transaction</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   FinTrack — Full Application Logic
+   ============================================================ */
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'];
+
+const DATA = {
+  revenue:  [62000,68500,71200,75800,69400,82000,79500,85000,88000,91200,69900],
+  expenses: [31000,33800,36000,34500,35200,38000,37500,40000,41200,44000,20000],
+  get profit(){ return this.revenue.map((r,i)=>r-this.expenses[i]); },
+  expenseCategories:{
+    Payroll:    [14000,15000,15500,15000,15500,16000,16000,17000,17500,18000,8000],
+    Operations: [8000,8800,9500,9000,9200,10000,9500,11000,11200,12000,5500],
+    Marketing:  [4500,4800,5000,4800,5200,6000,5500,6500,7000,7500,3500],
+    Technology: [3500,4000,4500,4200,4100,4500,5000,4500,4500,5000,2200],
+    Other:      [1000,1200,1500,1500,1200,1500,1500,1000,1000,1500,800],
+  },
+  fxRates:{
+    EUR:{rate:0.924,change:+0.12},GBP:{rate:0.792,change:-0.08},
+    JPY:{rate:149.70,change:+0.34},INR:{rate:83.42,change:-0.21},
+    CAD:{rate:1.364,change:+0.05},AUD:{rate:1.532,change:+0.17},
+    CHF:{rate:0.886,change:-0.03},CNY:{rate:7.246,change:+0.09},
+  },
+  transactions:[
+    {date:'2026-11-21',name:'Enterprise License — TechCorp',category:'Sales',amount:48000,type:'in'},
+    {date:'2026-11-20',name:'AWS Infrastructure Q4',category:'Technology',amount:-12400,type:'out'},
+    {date:'2026-11-19',name:'Payroll — November Cycle',category:'Payroll',amount:-68000,type:'out'},
+    {date:'2026-11-18',name:'Consulting Revenue — Nexus',category:'Sales',amount:22500,type:'in'},
+    {date:'2026-11-17',name:'Digital Marketing Campaign',category:'Marketing',amount:-8700,type:'out'},
+    {date:'2026-11-16',name:'SaaS Subscriptions',category:'Sales',amount:15800,type:'in'},
+    {date:'2026-11-15',name:'Office Lease Q4',category:'Operations',amount:-9500,type:'out'},
+    {date:'2026-11-14',name:'Product Revenue — Batch 11',category:'Sales',amount:31200,type:'in'},
+    {date:'2026-11-13',name:'Insurance Premium',category:'Operations',amount:-3800,type:'out'},
+    {date:'2026-11-12',name:'Partner Commission',category:'Sales',amount:11000,type:'in'},
+  ],
+  fraudTransactions:[
+    {id:'TXN-00841',date:'2026-11-21',amount:92400,merchant:'Unknown Offshore Ltd',risk:9.1,status:'blocked'},
+    {id:'TXN-00817',date:'2026-11-20',amount:38200,merchant:'Rapid Wire Services',risk:7.8,status:'review'},
+    {id:'TXN-00793',date:'2026-11-19',amount:5800,merchant:"Int'l Supplier Co.",risk:6.2,status:'review'},
+    {id:'TXN-00765',date:'2026-11-18',amount:15400,merchant:'Swift Pay Ltd',risk:8.5,status:'blocked'},
+    {id:'TXN-00744',date:'2026-11-17',amount:2200,merchant:'Freelance Dev — INR',risk:5.1,status:'approved'},
+    {id:'TXN-00710',date:'2026-11-15',amount:67800,merchant:'Crypto Bridge LLC',risk:9.6,status:'blocked'},
+  ],
+  expenses_log:[
+    {date:'2026-11-21',desc:'AWS EC2 Instances',category:'Technology',amount:4800,status:'approved'},
+    {date:'2026-11-20',desc:'Google Ads Campaign',category:'Marketing',amount:7200,status:'approved'},
+    {date:'2026-11-19',desc:'November Payroll',category:'Payroll',amount:68000,status:'approved'},
+    {date:'2026-11-18',desc:'Office Supplies',category:'Operations',amount:420,status:'pending'},
+    {date:'2026-11-17',desc:'Salesforce CRM',category:'Technology',amount:2800,status:'approved'},
+    {date:'2026-11-16',desc:'Team Retreat',category:'Operations',amount:12500,status:'pending'},
+    {date:'2026-11-15',desc:'Legal Consultation',category:'Operations',amount:3600,status:'approved'},
+    {date:'2026-11-14',desc:'LinkedIn Ads',category:'Marketing',amount:1500,status:'approved'},
+    {date:'2026-11-13',desc:'Azure Storage',category:'Technology',amount:900,status:'approved'},
+    {date:'2026-11-12',desc:'PR Agency Retainer',category:'Marketing',amount:5000,status:'review'},
+    {date:'2026-11-11',desc:'Contractor Payments',category:'Payroll',amount:14000,status:'approved'},
+    {date:'2026-11-10',desc:'Insurance Premium',category:'Operations',amount:3800,status:'approved'},
+  ],
+  budget:{
+    Payroll:{budget:72000,actual:68000},Operations:{budget:15000,actual:18200},
+    Marketing:{budget:10000,actual:7200},Technology:{budget:8000,actual:9500},Other:{budget:3000,actual:2800},
+  },
+  aiInsights:[
+    {title:'Operations Overspend',desc:'Operations expenses exceeded budget by 21.3% this month. Office supplies, legal, and retreat costs are primary drivers.',score:8.2,bg:'#fce8ea',scoreColor:'#e88fa0',severity:'HIGH',sevColor:'#8c2d35',sevBg:'#f4c5ce'},
+    {title:'Revenue Concentration Risk',desc:'Top 3 clients account for 61% of total revenue. Any churn from these accounts creates significant downside risk.',score:6.8,bg:'#fdf8e8',scoreColor:'#d4b44a',severity:'MEDIUM',sevColor:'#7a5c10',sevBg:'#f7e8b0'},
+    {title:'Cash Flow Positive Trend',desc:'Net cash position improved by $42,000 this month. AR collection cycle shortened by 4 days vs last quarter.',score:2.1,bg:'#edf9f2',scoreColor:'#5ec48a',severity:'LOW',sevColor:'#1a6e3a',sevBg:'#b8e4ca'},
+    {title:'Payroll Cost Trajectory',desc:'Payroll increased 12.8% YoY driven by new hires. At current growth rate, payroll will exceed 48% of revenue by Q2 2027.',score:5.9,bg:'#f5f0fd',scoreColor:'#9b7dd4',severity:'MEDIUM',sevColor:'#5a3d9e',sevBg:'#d4c5f0'},
+    {title:'Marketing ROI Improving',desc:'Revenue per marketing dollar rose from $4.2 to $5.8 this quarter. LinkedIn campaigns outperform Google Ads 2:1.',score:1.8,bg:'#eaf4fb',scoreColor:'#6baed6',severity:'POSITIVE',sevColor:'#235580',sevBg:'#c8dff0'},
+    {title:'Fraud Risk Elevated',desc:'6 high-risk transactions flagged this month totalling $213,800. 3 blocked automatically; 2 require manual review.',score:7.5,bg:'#fce8ea',scoreColor:'#e88fa0',severity:'HIGH',sevColor:'#8c2d35',sevBg:'#f4c5ce'},
+  ],
+  remedies:[
+    {title:'Reduce Operational Overhead',severity:'HIGH',sevColor:'#8c2d35',sevBg:'#f4c5ce',desc:'Operations costs are 21% over budget. Key drivers: unplanned team retreats and rising legal fees.',actions:['Freeze discretionary spending above $1,000 pending CFO approval','Renegotiate annual legal retainer — target 15% reduction','Implement expense pre-approval workflow for all categories','Consolidate SaaS tools — potential $4,200/mo savings'],prediction:'Projected savings: $14,000–$18,000/month if actions are implemented within 30 days.',predColor:'#e88fa0'},
+    {title:'Diversify Revenue Streams',severity:'MEDIUM',sevColor:'#7a5c10',sevBg:'#f7e8b0',desc:'Revenue concentration in top 3 clients (61%) creates fragility. Loss of one major client = ~$28,000/month shortfall.',actions:['Launch SMB outbound campaign — target 20 new mid-market accounts','Introduce recurring subscription tier for existing clients','Explore geographic expansion — APAC and EMEA markets identified','Activate referral program with 8% commission incentive'],prediction:'Diversification target: Reduce top-3 concentration below 40% within 6 months.',predColor:'#d4b44a'},
+    {title:'Payroll Optimization',severity:'MEDIUM',sevColor:'#7a5c10',sevBg:'#f7e8b0',desc:'Payroll at 46.3% of revenue and growing. Hiring pace outstrips revenue growth by 2:1 ratio.',actions:['Conduct role efficiency audit — identify automation opportunities','Shift 2 junior roles to contractor model — save $36,000 annually','Implement performance-linked variable pay component','Pause non-critical open requisitions until Q2 targets met'],prediction:'Target payroll ratio: 40% of revenue. Estimated 7-month timeline.',predColor:'#d4b44a'},
+    {title:'Strengthen Fraud Controls',severity:'HIGH',sevColor:'#8c2d35',sevBg:'#f4c5ce',desc:'6 high-risk transactions flagged this month. Pattern analysis suggests testing of payment systems by external actors.',actions:['Enable real-time transaction velocity limits per merchant category','Require 2FA for all transactions above $10,000','Block new international counterparties until KYC completed','Schedule quarterly penetration test of payment infrastructure'],prediction:'Fraud prevention score estimated to improve from 6.4 to 8.5 within 60 days.',predColor:'#e88fa0'},
+  ],
+};
+
+// Chart.js defaults
+Chart.defaults.font.family="'Inter',system-ui,sans-serif";
+Chart.defaults.font.size=11;
+Chart.defaults.color='#6b6b8a';
+Chart.defaults.plugins.legend.display=false;
+
+const charts={};
+function dc(k){if(charts[k]){charts[k].destroy();delete charts[k];}}
+
+// SPARKLINES
+function sparkline(id,data,color){
+  const ctx=document.getElementById(id); if(!ctx)return;
+  dc(id);
+  charts[id]=new Chart(ctx,{type:'line',data:{labels:data.map((_,i)=>i),datasets:[{data,borderColor:color,borderWidth:2,pointRadius:0,fill:false,tension:.4}]},options:{responsive:true,animation:false,scales:{x:{display:false},y:{display:false}},plugins:{tooltip:{enabled:false}}}});
+}
+function initSparklines(){
+  sparkline('spark-revenue',DATA.revenue,'#6baed6');
+  sparkline('spark-expenses',DATA.expenses,'#e88fa0');
+  sparkline('spark-profit',DATA.profit,'#5ec48a');
+  sparkline('spark-margin',DATA.profit.map((p,i)=>+(p/DATA.revenue[i]*100).toFixed(1)),'#d4b44a');
+}
+
+// REV vs EXP
+function initRevExpChart(){
+  const ctx=document.getElementById('chart-revexp'); if(!ctx)return; dc('chart-revexp');
+  charts['chart-revexp']=new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:[
+    {label:'Revenue',data:DATA.revenue,backgroundColor:'#c8dff0',borderRadius:6,borderSkipped:false},
+    {label:'Expenses',data:DATA.expenses,backgroundColor:'#f4c5ce',borderRadius:6,borderSkipped:false},
+    {label:'Profit',data:DATA.profit,type:'line',borderColor:'#5ec48a',backgroundColor:'rgba(94,196,138,0.08)',borderWidth:2.5,pointBackgroundColor:'#5ec48a',pointRadius:4,tension:.4,fill:true},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` $${c.parsed.y.toLocaleString()}`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(0,0,0,0.04)'},border:{display:false},ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k'}}}}});
+}
+
+// EXPENSE DONUT
+function initExpenseDonut(){
+  const ctx=document.getElementById('chart-expense-donut'); if(!ctx)return; dc('chart-expense-donut');
+  const cats=Object.keys(DATA.expenseCategories);
+  const totals=cats.map(c=>DATA.expenseCategories[c].reduce((a,b)=>a+b,0));
+  const colors=['#c8dff0','#f4c5ce','#b8e4ca','#f7e8b0','#d4c5f0'];
+  charts['chart-expense-donut']=new Chart(ctx,{type:'doughnut',data:{labels:cats,datasets:[{data:totals,backgroundColor:colors,borderWidth:0,hoverOffset:6}]},options:{cutout:'70%',plugins:{tooltip:{callbacks:{label:c=>` $${c.parsed.toLocaleString()}`}}}}});
+  const legend=document.getElementById('donut-legend');
+  if(legend) legend.innerHTML=cats.map((c,i)=>`<div class="donut-legend-item"><div class="donut-legend-left"><div class="donut-legend-dot" style="background:${colors[i]}"></div>${c}</div><span style="font-weight:600;color:#1c1c2e">$${(totals[i]/1000).toFixed(0)}k</span></div>`).join('');
+}
+
+// TRANSACTIONS
+function renderTransactionList(){
+  const el=document.getElementById('transaction-list'); if(!el)return;
+  el.innerHTML=DATA.transactions.map(tx=>`<div class="tx-item"><div class="tx-info"><span class="tx-name">${tx.name}</span><span class="tx-category">${tx.category}</span></div><div style="text-align:right"><div class="tx-amount ${tx.type}">${tx.type==='in'?'+':''}$${Math.abs(tx.amount).toLocaleString()}</div><div class="tx-date">${tx.date}</div></div></div>`).join('');
+}
+
+// RISK GAUGE
+function initRiskGauge(){
+  const ctx=document.getElementById('risk-gauge'); if(!ctx)return; dc('risk-gauge');
+  charts['risk-gauge']=new Chart(ctx,{type:'doughnut',data:{datasets:[{data:[72,28],backgroundColor:['#f4c5ce','rgba(0,0,0,0.05)'],borderWidth:0,circumference:270,rotation:225}]},options:{cutout:'78%',plugins:{tooltip:{enabled:false}}}});
+  const bd=document.getElementById('risk-breakdown');
+  if(bd) bd.innerHTML=[{label:'Fraud Risk',value:68,color:'#e88fa0'},{label:'Liquidity Risk',value:42,color:'#d4b44a'},{label:'Operational Risk',value:55,color:'#9b7dd4'}].map(it=>`<div class="risk-row"><span style="font-size:12px;min-width:110px;color:#6b6b8a">${it.label}</span><div class="risk-bar-bg"><div class="risk-bar-fill" style="width:${it.value}%;background:${it.color}"></div></div><span style="font-size:12px;font-weight:600;min-width:28px;text-align:right">${it.value}</span></div>`).join('');
+}
+
+// CASH FLOW
+function initCashflowChart(){
+  const ctx=document.getElementById('chart-cashflow'); if(!ctx)return; dc('chart-cashflow');
+  const actual=[120,118,125,131,128,135,142,138,145,150].map(v=>v*1000);
+  const forecast=[null,null,null,null,null,null,142000,148000,155000,162000];
+  charts['chart-cashflow']=new Chart(ctx,{type:'line',data:{labels:Array.from({length:10},(_,i)=>`Nov ${(i+1)*3}`),datasets:[{label:'Actual',data:actual,borderColor:'#6baed6',backgroundColor:'rgba(107,174,214,0.1)',fill:true,tension:.4,pointRadius:3,borderWidth:2},{label:'Forecast',data:forecast,borderColor:'#d4b44a',backgroundColor:'rgba(212,180,74,0.08)',fill:true,tension:.4,pointRadius:3,borderWidth:2,borderDash:[5,4]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',align:'start'},tooltip:{callbacks:{label:c=>c.parsed.y?` $${(c.parsed.y/1000).toFixed(0)}k`:''}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(0,0,0,0.04)'},border:{display:false},ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k'}}}}});
+}
+
+// PNL TABLE
+function initPnL(){
+  const tbody=document.getElementById('pnl-tbody'); if(!tbody)return;
+  const fmt=n=>n>=0?`$${n.toLocaleString()}`:`($${Math.abs(n).toLocaleString()})`;
+  const rt=arr=>arr.reduce((a,b)=>a+b,0);
+  const rows=[
+    {label:'REVENUE',isHeader:true},
+    {label:'Product Sales',data:[38000,42000,44000,47000,42000,51000,49000,53000,55000,57000,43000]},
+    {label:'SaaS Subscriptions',data:[14000,15500,16000,16800,16400,18000,17500,18500,19000,20000,15000]},
+    {label:'Consulting',data:[10000,11000,11200,12000,11000,13000,13000,13500,14000,14200,11900]},
+    {label:'Total Revenue',data:DATA.revenue,isTotal:true},
+    {label:'COST OF GOODS',isHeader:true},
+    {label:'Direct Costs',data:DATA.expenses.map(e=>Math.round(e*.4))},
+    {label:'Gross Profit',data:DATA.revenue.map((r,i)=>r-Math.round(DATA.expenses[i]*.4)),isTotal:true},
+    {label:'OPERATING EXPENSES',isHeader:true},
+    ...Object.entries(DATA.expenseCategories).map(([k,v])=>({label:k,data:v})),
+    {label:'Total OpEx',data:DATA.expenses.map(e=>Math.round(e*.6)),isTotal:true},
+    {label:'NET PROFIT / LOSS',data:DATA.profit,isTotal:true},
+  ];
+  tbody.innerHTML=rows.map(row=>{
+    if(row.isHeader)return`<tr class="section-header"><td colspan="13">${row.label}</td></tr>`;
+    const vals=row.data||[];const total=rt(vals);
+    return`<tr class="${row.isTotal?'total-row':''}"><td>${row.label}</td>${vals.map(v=>`<td class="${v<0?'negative':(row.isTotal&&v>0?'positive':'')}">${fmt(v)}</td>`).join('')}<td class="${total<0?'negative':'positive'}" style="font-weight:700">${fmt(total)}</td></tr>`;
+  }).join('');
+  // Waterfall
+  const wctx=document.getElementById('chart-waterfall'); if(wctx){dc('chart-waterfall');
+  charts['chart-waterfall']=new Chart(wctx,{type:'bar',data:{labels:['Revenue','COGS','Gross Profit','OpEx','Net Profit'],datasets:[{data:[842500,-156400,686100,-234800,451300],backgroundColor:['#b8e4ca','#f4c5ce','#b8e4ca','#f4c5ce','#b8e4ca'],borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>` $${Math.abs(c.parsed.y).toLocaleString()}`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(0,0,0,0.04)'},border:{display:false},ticks:{callback:v=>'$'+(Math.abs(v)/1000).toFixed(0)+'k'}}}}});}
+  // Margin
+  const mctx=document.getElementById('chart-margin-trend'); if(mctx){dc('chart-margin-trend');
+  charts['chart-margin-trend']=new Chart(mctx,{type:'line',data:{labels:MONTHS,datasets:[{data:DATA.profit.map((p,i)=>+(p/DATA.revenue[i]*100).toFixed(1)),borderColor:'#9b7dd4',backgroundColor:'rgba(155,125,212,0.1)',fill:true,tension:.4,pointRadius:4,borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>` ${c.parsed.y}%`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(0,0,0,0.04)'},border:{display:false},ticks:{callback:v=>v+'%'}}}}});}
+}
+
+// EXPENSES PAGE
+let activeFilter='all';
+function initExpenseBar(filter){
+  const ctx=document.getElementById('chart-expense-bar'); if(!ctx)return; dc('chart-expense-bar');
+  const cats=filter==='all'?Object.keys(DATA.expenseCategories):[filter];
+  const colors={Payroll:'#c8dff0',Operations:'#f4c5ce',Marketing:'#b8e4ca',Technology:'#f7e8b0',Other:'#d4c5f0'};
+  charts['chart-expense-bar']=new Chart(ctx,{type:'bar',data:{labels:MONTHS,datasets:cats.map(c=>({label:c,data:DATA.expenseCategories[c],backgroundColor:colors[c],borderRadius:6,borderSkipped:false}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:cats.length>1,position:'top',align:'start'},tooltip:{callbacks:{label:c=>` $${c.parsed.y.toLocaleString()}`}}},scales:{x:{stacked:filter==='all',grid:{display:false},border:{display:false}},y:{stacked:filter==='all',grid:{color:'rgba(0,0,0,0.04)'},border:{display:false},ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k'}}}}});
+}
+function initBudgetChart(){
+  const ctx=document.getElementById('chart-budget'); if(!ctx)return; dc('chart-budget');
+  const cats=Object.keys(DATA.budget),budgets=cats.map(c=>DATA.budget[c].budget),actuals=cats.map(c=>DATA.budget[c].actual);
+  charts['chart-budget']=new Chart(ctx,{type:'bar',data:{labels:cats,datasets:[{label:'Budget',data:budgets,backgroundColor:'rgba(107,174,214,0.25)',borderColor:'#6baed6',borderWidth:1.5,borderRadius:6,borderSkipped:false},{label:'Actual',data:actuals,backgroundColor:actuals.map((a,i)=>a>budgets[i]?'#f4c5ce':'#b8e4ca'),borderRadius:6,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',align:'start'},tooltip:{callbacks:{label:c=>` $${c.parsed.x.toLocaleString()}`}}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},border:{display:false},ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k'}},y:{grid:{display:false},border:{display:false}}}}});
+}
+function renderExpenseTable(filter){
+  const tbody=document.getElementById('expense-tbody'); if(!tbody)return;
+  const rows=filter==='all'?DATA.expenses_log:DATA.expenses_log.filter(e=>e.category===filter);
+  const badge=s=>({approved:'badge-success',pending:'badge-warning',review:'badge-info'})[s]||'badge-muted';
+  tbody.innerHTML=rows.map(e=>`<tr><td>${e.date}</td><td>${e.desc}</td><td><span class="badge badge-muted">${e.category}</span></td><td style="font-weight:600">$${e.amount.toLocaleString()}</td><td><span class="badge ${badge(e.status)}">${e.status.charAt(0).toUpperCase()+e.status.slice(1)}</span></td></tr>`).join('');
+}
+function initExpensesPage(){
+  initExpenseBar(activeFilter); initBudgetChart(); renderExpenseTable(activeFilter);
+  document.querySelectorAll('.filter-tab').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active'); activeFilter=btn.dataset.filter;
+      initExpenseBar(activeFilter); renderExpenseTable(activeFilter);
+    });
+  });
+  const es=document.getElementById('expense-search');
+  if(es) es.addEventListener('input',e=>{const q=e.target.value.toLowerCase();document.querySelectorAll('#expense-tbody tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(q)?'':' none');});
+}
+
+// CURRENCY
+function initCurrencyPage(){
+  const currencies=['USD','EUR','GBP','JPY','INR','CAD','AUD','CHF','CNY'];
+  const sf=document.getElementById('conv-from'),st=document.getElementById('conv-to'); if(!sf||!st)return;
+  currencies.forEach(c=>{sf.add(new Option(c,c));st.add(new Option(c,c));});
+  sf.value='USD';st.value='EUR';
+  document.getElementById('do-convert')?.addEventListener('click',doConvert);
+  document.getElementById('swap-currencies')?.addEventListener('click',()=>{const tmp=sf.value;sf.value=st.value;st.value=tmp;doConvert();});
+  const grid=document.getElementById('fx-rates-grid');
+  if(grid) grid.innerHTML=Object.entries(DATA.fxRates).map(([cur,{rate,change}])=>`<div class="fx-rate-item"><span class="fx-currency">USD / ${cur}</span><span class="fx-rate">${rate.toLocaleString()}</span><span class="fx-change ${change>=0?'up':'down'}">${change>=0?'+':''}${change}%</span></div>`).join('');
+  // FX Exposure
+  const ectx=document.getElementById('chart-fx-exposure'); if(ectx){dc('chart-fx-exposure');
+  charts['chart-fx-exposure']=new Chart(ectx,{type:'doughnut',data:{labels:['USD','EUR','GBP','INR','Other'],datasets:[{data:[52,18,12,10,8],backgroundColor:['#c8dff0','#f4c5ce','#b8e4ca','#f7e8b0','#d4c5f0'],borderWidth:0,hoverOffset:6}]},options:{cutout:'65%',plugins:{legend:{display:true,position:'bottom'},tooltip:{callbacks:{label:c=>` ${c.parsed}%`}}}}});}
+  // FX History
+  const hctx=document.getElementById('chart-fx-history'); if(hctx){dc('chart-fx-history');
+  charts['chart-fx-history']=new Chart(hctx,{type:'line',data:{labels:['Oct 1','Oct 6','Oct 11','Oct 16','Oct 21','Nov 1'],datasets:[{label:'EUR',data:[0.912,0.918,0.921,0.924,0.919,0.924],borderColor:'#6baed6',borderWidth:2,tension:.4,pointRadius:3},{label:'GBP',data:[0.785,0.788,0.791,0.793,0.790,0.792],borderColor:'#e88fa0',borderWidth:2,tension:.4,pointRadius:3},{label:'INR (÷10)',data:[8.31,8.32,8.335,8.33,8.34,8.342],borderColor:'#5ec48a',borderWidth:2,tension:.4,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',align:'start'}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(0,0,0,0.04)'},border:{display:false},ticks:{callback:v=>v.toFixed(2)}}}}});}
+  doConvert();
+}
+function doConvert(){
+  const from=document.getElementById('conv-from')?.value,to=document.getElementById('conv-to')?.value;
+  const amount=parseFloat(document.getElementById('conv-amount')?.value)||0;
+  const rates={USD:1,...Object.fromEntries(Object.entries(DATA.fxRates).map(([k,v])=>[k,v.rate]))};
+  const result=amount/rates[from]*rates[to];
+  const re=document.getElementById('conv-result'); if(re) re.value=result.toFixed(4);
+  const info=document.getElementById('rate-info'); if(info) info.textContent=`1 ${from} = ${(rates[to]/rates[from]).toFixed(4)} ${to}  •  Rate updated Nov 21, 2026`;
+}
+
+// FRAUD
+function initFraudPage(){
+  const ftctx=document.getElementById('chart-fraud-timeline'); if(ftctx){dc('chart-fraud-timeline');
+  const data=[2,1,3,0,2,4,1,2,3,2,1,0,1,3,4,2,1,1,2,3,2,1,0,2,3,1,2,4,2,1];
+  const flags=[1,0,2,0,1,3,0,1,2,1,0,0,0,2,3,1,0,1,1,2,1,0,0,1,2,0,1,3,1,0];
+  charts['chart-fraud-timeline']=new Chart(ftctx,{type:'bar',data:{labels:Array.from({length:30},(_,i)=>i+1),datasets:[{label:'Transactions',data,backgroundColor:'#c8dff0',borderRadius:4,borderSkipped:false},{label:'Flagged',data:flags,backgroundColor:'#f4c5ce',borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',align:'start'}},scales:{x:{stacked:true,grid:{display:false},border:{display:false}},y:{stacked:true,grid:{color:'rgba(0,0,0,0.04)'},border:{display:false}}}}});}
+  const fcctx=document.getElementById('chart-fraud-cat'); if(fcctx){dc('chart-fraud-cat');
+  charts['chart-fraud-cat']=new Chart(fcctx,{type:'doughnut',data:{labels:['Unusual Amount','New Counterparty','Velocity','Geographic','Crypto Bridge'],datasets:[{data:[38,24,18,12,8],backgroundColor:['#f4c5ce','#f7e8b0','#d4c5f0','#c8dff0','#b8e4ca'],borderWidth:0,hoverOffset:6}]},options:{cutout:'60%',plugins:{legend:{display:true,position:'bottom'}}}});}
+  const tbody=document.getElementById('fraud-tbody'); if(tbody){
+    const rb=score=>score>=8?'badge-danger':score>=6?'badge-warning':'badge-success';
+    const sb=s=>({blocked:'badge-danger',review:'badge-warning',approved:'badge-success'})[s];
+    tbody.innerHTML=DATA.fraudTransactions.map(tx=>`<tr><td style="font-family:monospace;font-size:12px">${tx.id}</td><td>${tx.date}</td><td style="font-weight:600">$${tx.amount.toLocaleString()}</td><td>${tx.merchant}</td><td><span class="badge ${rb(tx.risk)}">${tx.risk.toFixed(1)}</span></td><td><span class="badge ${sb(tx.status)}">${tx.status.charAt(0).toUpperCase()+tx.status.slice(1)}</span></td><td><div style="display:flex;gap:6px"><button class="risk-btn risk-btn-approve">Approve</button><button class="risk-btn risk-btn-review">Review</button><button class="risk-btn risk-btn-block">Block</button></div></td></tr>`).join('');
+  }
+}
+
+// AI INSIGHTS
+function initAIPage(){
+  // Insight cards
+  const grid=document.getElementById('ai-insights-grid'); if(grid)
+    grid.innerHTML=DATA.aiInsights.map(ins=>`<div class="insight-card" style="background:${ins.bg}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="insight-title">${ins.title}</span><span class="badge" style="background:${ins.sevBg};color:${ins.sevColor}">${ins.severity}</span></div><div class="insight-desc">${ins.desc}</div><div class="insight-score"><div class="score-label"><span>Risk Score</span><span style="font-weight:700;color:${ins.scoreColor}">${ins.score}/10</span></div><div class="score-bar-bg"><div class="score-bar-fill" style="width:${ins.score*10}%;background:${ins.scoreColor}"></div></div></div></div>`).join('');
+  // Forecast
+  const fctx=document.getElementById('chart-forecast'); if(fctx){dc('chart-forecast');
+  charts['chart-forecast']=new Chart(fctx,{type:'line',data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan 27','Feb 27'],datasets:[{label:'Actual',data:[62000,68500,71200,75800,69400,82000,79500,85000,88000,91200,null,null,null,null],borderColor:'#6baed6',backgroundColor:'rgba(107,174,214,0.1)',fill:true,tension:.4,pointRadius:4,borderWidth:2.5},{label:'Forecast',data:[null,null,null,null,null,null,null,null,88000,91200,96000,102000,108000,115000],borderColor:'#d4b44a',borderDash:[6,4],tension:.4,pointRadius:4,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',align:'start'},tooltip:{callbacks:{label:c=>c.parsed.y?` $${c.parsed.y.toLocaleString()}`:''}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(0,0,0,0.04)'},border:{display:false},ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k'}}}}});}
+  // Health scores
+  const hs=document.getElementById('health-scores'); if(hs)
+    hs.innerHTML=[{label:'Overall Financial Health',value:74,color:'#6baed6'},{label:'Liquidity',value:82,color:'#5ec48a'},{label:'Profitability',value:68,color:'#d4b44a'},{label:'Revenue Growth',value:79,color:'#9b7dd4'},{label:'Cost Efficiency',value:55,color:'#e88fa0'},{label:'Risk Exposure',value:42,color:'#e88fa0'}].map(s=>`<div class="health-item"><div class="health-label"><span>${s.label}</span><span style="color:${s.color}">${s.value}%</span></div><div class="health-bar-bg"><div class="health-bar-fill" style="width:${s.value}%;background:${s.color}"></div></div></div>`).join('');
+  // Remedies
+  const rg=document.getElementById('remedies-grid'); if(rg)
+    rg.innerHTML=DATA.remedies.map(r=>`<div class="remedy-card"><div class="remedy-header"><span class="remedy-severity" style="background:${r.sevBg};color:${r.sevColor}">${r.severity}</span><span class="remedy-title">${r.title}</span></div><p class="remedy-desc">${r.desc}</p>${r.actions.map(a=>`<div class="remedy-action">${a}</div>`).join('')}<div class="remedy-prediction" style="border-left-color:${r.predColor};margin-top:12px"><strong>Prediction:</strong> ${r.prediction}</div></div>`).join('');
+}
+
+// REPORTS
+function initReportsPage(){
+  const yctx=document.getElementById('chart-yoy'); if(yctx){dc('chart-yoy');
+  charts['chart-yoy']=new Chart(yctx,{type:'line',data:{labels:MONTHS,datasets:[{label:'2025',data:[52000,56000,61000,64000,59000,68000,65000,72000,74000,78000,60000],borderColor:'#d4c5f0',backgroundColor:'rgba(212,197,240,0.1)',fill:true,tension:.4,pointRadius:3,borderWidth:2},{label:'2026',data:DATA.revenue,borderColor:'#6baed6',backgroundColor:'rgba(107,174,214,0.1)',fill:true,tension:.4,pointRadius:3,borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',align:'start'},tooltip:{callbacks:{label:c=>` $${c.parsed.y.toLocaleString()}`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(0,0,0,0.04)'},border:{display:false},ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k'}}}}});}
+  const qctx=document.getElementById('chart-quarterly'); if(qctx){dc('chart-quarterly');
+  const qR=[201700,227200,252500,161100],qE=[100800,107700,122700,64000];
+  charts['chart-quarterly']=new Chart(qctx,{type:'bar',data:{labels:['Q1 2026','Q2 2026','Q3 2026','Q4 (YTD)'],datasets:[{label:'Revenue',data:qR,backgroundColor:'#c8dff0',borderRadius:6,borderSkipped:false},{label:'Expenses',data:qE,backgroundColor:'#f4c5ce',borderRadius:6,borderSkipped:false},{label:'Profit',data:qR.map((r,i)=>r-qE[i]),backgroundColor:'#b8e4ca',borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',align:'start'},tooltip:{callbacks:{label:c=>` $${c.parsed.y.toLocaleString()}`}}},scales:{x:{grid:{display:false},border:{display:false}},y:{grid:{color:'rgba(0,0,0,0.04)'},border:{display:false},ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k'}}}}});}
+  const rl=document.getElementById('report-list'); if(rl){
+    const reports=[{name:'P&L Statement — November 2026',meta:'Generated Nov 21, 2026  •  PDF  •  2.4 MB',color:'#c8dff0'},{name:'Quarterly Revenue Report Q3 2026',meta:'Generated Oct 1, 2026  •  PDF  •  1.8 MB',color:'#b8e4ca'},{name:'Expense Audit — October 2026',meta:'Generated Nov 1, 2026  •  XLSX  •  980 KB',color:'#f7e8b0'},{name:'Fraud Risk Assessment Q3 2026',meta:'Generated Oct 5, 2026  •  PDF  •  3.1 MB',color:'#f4c5ce'},{name:'FX Exposure Summary — 2026 YTD',meta:'Generated Nov 15, 2026  •  PDF  •  1.2 MB',color:'#d4c5f0'}];
+    rl.innerHTML=reports.map(r=>`<div class="report-item"><div class="report-info"><div class="report-icon" style="background:${r.color}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1c1c2e" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="report-name">${r.name}</div><div class="report-meta">${r.meta}</div></div></div><div class="report-actions"><button class="btn-outline">Preview</button><button class="btn-primary" style="font-size:12px;padding:7px 14px">Download</button></div></div>`).join('');
+  }
+}
+
+// SETTINGS
+function initSettingsPage(){
+  const fs=document.getElementById('fraud-threshold'),bs=document.getElementById('budget-threshold');
+  const fv=document.getElementById('fraud-threshold-val'),bv=document.getElementById('budget-threshold-val');
+  fs?.addEventListener('input',()=>{if(fv)fv.textContent=parseFloat(fs.value).toFixed(1);});
+  bs?.addEventListener('input',()=>{if(bv)bv.textContent=bs.value+'%';});
+}
+
+// MODAL
+function initModal(){
+  const overlay=document.getElementById('modal-overlay');
+  document.getElementById('add-transaction-btn')?.addEventListener('click',()=>overlay?.classList.add('open'));
+  document.getElementById('modal-close')?.addEventListener('click',()=>overlay?.classList.remove('open'));
+  overlay?.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('open');});
+  const di=document.getElementById('tx-date'); if(di) di.value=new Date().toISOString().split('T')[0];
+  document.getElementById('save-transaction')?.addEventListener('click',()=>{
+    const type=document.getElementById('tx-type')?.value,cat=document.getElementById('tx-category')?.value;
+    const amount=parseFloat(document.getElementById('tx-amount')?.value),date=document.getElementById('tx-date')?.value,desc=document.getElementById('tx-desc')?.value;
+    if(!amount||!desc){alert('Please fill in all fields.');return;}
+    DATA.transactions.unshift({date,name:desc,category:cat,amount:type==='Revenue'?amount:-amount,type:type==='Revenue'?'in':'out'});
+    renderTransactionList();overlay?.classList.remove('open');
+  });
+}
+
+// NAVIGATION
+const PAGE_TITLES={dashboard:['Dashboard','Overview — November 2026'],pnl:['P&L Report','Profit & Loss — YTD 2026'],expenses:['Expenses','Tracking & Categorization'],currency:['Currency','FX Rates & Conversion'],fraud:['Fraud Monitor','Risk & Anomaly Detection'],ai:['AI Insights','Automated Financial Intelligence'],reports:['Reports','Downloadable Documents'],settings:['Settings','Preferences & Configuration']};
+const PAGE_INITS={dashboard:initDashboard,pnl:initPnL,expenses:initExpensesPage,currency:initCurrencyPage,fraud:initFraudPage,ai:initAIPage,reports:initReportsPage,settings:initSettingsPage};
+
+function initDashboard(){initSparklines();initRevExpChart();initExpenseDonut();renderTransactionList();initRiskGauge();initCashflowChart();}
+
+function navigate(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(`page-${page}`)?.classList.add('active');
+  document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
+  const[title,subtitle]=PAGE_TITLES[page]||['Dashboard',''];
+  document.getElementById('page-title').textContent=title;
+  document.getElementById('page-subtitle').textContent=subtitle;
+  if(PAGE_INITS[page]) PAGE_INITS[page]();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.nav-item').forEach(item=>item.addEventListener('click',e=>{e.preventDefault();navigate(item.dataset.page);}));
+  initModal();
+  navigate('dashboard');
+});
+</script>
+</body>
+</html>
